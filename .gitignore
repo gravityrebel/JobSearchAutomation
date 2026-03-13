@@ -1,0 +1,19 @@
+.env
+ideal_role.json
+.tmp/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local user content
+resume/*
+!resume/README.txt
+
+# Local editor/OS noise
+.DS_Store
+Thumbs.db
+.claude/scheduled_tasks.lock

@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "mcp__claude_ai_Indeed__search_jobs",
+      "mcp__claude_ai_Indeed__get_job_details",
+      "mcp__claude_ai_Indeed__get_company_data",
+      "mcp__claude_ai_Indeed__get_resume",
+      "mcp__mcp-registry__search_mcp_registry"
+    ],
+    "defaultMode": "bypassPermissions"
+  }
+}
