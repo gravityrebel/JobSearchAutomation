@@ -203,7 +203,7 @@ def read_resume_structured() -> str:
             continue
 
         # Detect paragraph type
-        style_name = para.style.name.lower()
+        style_name = para.style.name.lower() if para.style else ""
         is_heading = "heading" in style_name
         is_bold = any(run.bold for run in para.runs if run.text.strip())
         is_list = "list" in style_name or text.startswith(("•", "-", "–", "*"))

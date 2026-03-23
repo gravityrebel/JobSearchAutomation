@@ -1,7 +1,7 @@
 # Workflow: Search Jobs
 
 ## Objective
-Silently search Indeed for new jobs matching stored criteria, append only new results to the master Google Sheet, and trigger resume tailoring for each new job.
+Silently search Indeed and Dice for new jobs matching stored criteria, append only new results to the master Google Sheet, and trigger resume tailoring for each new job.
 
 ## When This Runs
 - On the registered schedule (set during onboarding).
@@ -25,7 +25,7 @@ If any required field other than `LAST_SEARCH_DATE` is missing, log an error and
 
 ---
 
-## Step 2: Search Indeed
+## Step 2: Search Indeed and Dice
 
 Indeed is accessed via the MCP connector authenticated in the Claude web UI (`claude.ai`).
 The agent calls `mcp__claude_ai_Indeed__search_jobs` and `mcp__claude_ai_Indeed__get_job_details` directly.
@@ -44,7 +44,7 @@ Each result object must have:
 - `url` - direct link to job posting
 - `description` - full job description text
 
-**2b. Write raw results to a temp file**, then run the date filter:
+**2b. Write Indeed raw results to a temp file**, then run the date filter:
 
 ```text
 python tools/search_indeed.py \
@@ -53,7 +53,7 @@ python tools/search_indeed.py \
   --salary_min <SALARY_MIN> \
   --keywords "<KEYWORDS>" \
   --since_date "<LAST_SEARCH_DATE>" \
-  --results_file ".tmp/raw_results.json"
+  --results_file ".tmp/indeed_raw.json"
 ```
 
 - If `LAST_SEARCH_DATE` is empty (first run): pass an empty string - the tool returns all results.
@@ -62,9 +62,32 @@ python tools/search_indeed.py \
 - The tool prints a summary to stderr: `X total, Y skipped (already seen), Z new`
 - The tool outputs the filtered JSON list to stdout.
 
+**2c. Search Dice** using `mcp__claude_ai_Dice__search_jobs` for each title in `JOB_TITLES`.
+Collect all raw Dice results into a single list and write to `.tmp/dice_raw.json`.
+
+Then run the date filter:
+
+```text
+python tools/search_dice.py \
+  --titles "<JOB_TITLES>" \
+  --location "<LOCATION>" \
+  --salary_min <SALARY_MIN> \
+  --keywords "<KEYWORDS>" \
+  --since_date "<LAST_SEARCH_DATE>" \
+  --results_file ".tmp/dice_raw.json"
+```
+
+- Same date-filter rules as Indeed apply.
+- The tool normalizes Dice field names and prefixes all `job_hash` values with `dice_` to prevent
+  collisions with Indeed hashes.
+- If the Dice MCP call fails or returns an error, log it and continue with Indeed results only —
+  a Dice failure must not block the whole run.
+
+**2d. Merge results**: combine the filtered Indeed list and filtered Dice list into one list.
+
 **Edge cases:**
-- If the filtered list is empty, log `"No new jobs found this run."` and stop.
-- If the tool errors, log the full error and stop.
+- If the combined list is empty, log `"No new jobs found this run."` and stop.
+- If either tool errors, log the full error. Only stop if both sources fail.
 
 ---
 
@@ -136,6 +159,8 @@ On the next run, `search_indeed.py` will use this date to filter out anything al
 | `.env` missing fields | Log error, exit silently |
 | `LAST_SEARCH_DATE` missing | First run - pass empty string to `search_indeed.py`, return all results |
 | `search_indeed.py` fails | Log error and stop |
+| `search_dice.py` fails | Log error, continue with Indeed results only |
+| Dice MCP unavailable | Log warning, continue with Indeed results only |
 | Writing `LAST_SEARCH_DATE` fails | Log error, continue - next run will re-process recent jobs (job hash dedup prevents duplicates) |
 | Sheet append fails | Log error, skip resume tailoring for that job |
 | `tailor_resume` fails | Log error, leave Notes column blank for that row, continue |
@@ -146,5 +171,6 @@ All errors are logged to `.tmp/search_jobs_log.txt` with timestamp.
 
 ## Tools Used
 - `tools/search_indeed.py` - parameter parsing and result normalization (Indeed queried via MCP)
+- `tools/search_dice.py` - parameter parsing and result normalization (Dice queried via MCP)
 - `tools/sheets.py` - reads/writes Google Sheet via Python Google API
 - `workflows/tailor_resume.md` - resume tailoring sub-workflow
