@@ -1,7 +1,7 @@
 # Workflow: Search Jobs
 
 ## Objective
-Silently search Indeed and Dice for new jobs matching stored criteria, append only new results to the master Google Sheet, and trigger resume tailoring for each new job.
+Silently search Indeed, Dice, and the Gmail inbox for new jobs matching stored criteria, append only new results to the Notion Applications database, and trigger resume tailoring for each new job.
 
 ## When This Runs
 - On the registered schedule (set during onboarding).
@@ -84,11 +84,21 @@ python tools/search_dice.py \
 - If the Dice MCP call fails or returns an error, log it and continue with Indeed results only —
   a Dice failure must not block the whole run.
 
-**2d. Merge results**: combine the filtered Indeed list and filtered Dice list into one list.
+**2d. Parse Gmail inbox** by calling `workflows/parse_inbox.md` with `LAST_SEARCH_DATE`.
+
+The workflow returns a list of normalized job objects (same format as Indeed/Dice output) with
+`job_hash` values prefixed `inbox_` and `source` set to `"inbox"`.
+
+- If `parse_inbox.py` fails (missing scope, API error, etc.), log the error and continue without
+  inbox results. Inbox failure must not block the run.
+
+**2e. Merge results**: combine the filtered Indeed list, filtered Dice list, and inbox list into
+one combined list.
 
 **Edge cases:**
 - If the combined list is empty, log `"No new jobs found this run."` and stop.
-- If either tool errors, log the full error. Only stop if both sources fail.
+- If all three sources error, log the full errors and stop.
+- If one or two sources error, log the errors and continue with whatever results remain.
 
 ---
 
@@ -162,8 +172,10 @@ On the next run, `search_indeed.py` will use this date to filter out anything al
 | `.env` missing fields | Log error, exit silently |
 | `LAST_SEARCH_DATE` missing | First run - pass empty string to `search_indeed.py`, return all results |
 | `search_indeed.py` fails | Log error and stop |
-| `search_dice.py` fails | Log error, continue with Indeed results only |
-| Dice MCP unavailable | Log warning, continue with Indeed results only |
+| `search_dice.py` fails | Log error, continue with remaining sources |
+| Dice MCP unavailable | Log warning, continue with remaining sources |
+| `parse_inbox.py` fails | Log error, continue with Indeed and Dice results |
+| Gmail token missing `gmail.readonly` | Log re-auth instructions, continue without inbox results |
 | Writing `LAST_SEARCH_DATE` fails | Log error, continue - next run will re-process recent jobs (job hash dedup prevents duplicates) |
 | Notion entry creation fails | Log error, skip resume tailoring for that job |
 | `tailor_resume` fails | Log error, leave Resume field blank for that entry, continue |
@@ -175,5 +187,7 @@ All errors are logged to `.tmp/search_jobs_log.txt` with timestamp.
 ## Tools Used
 - `tools/search_indeed.py` - parameter parsing and result normalization (Indeed queried via MCP)
 - `tools/search_dice.py` - parameter parsing and result normalization (Dice queried via MCP)
+- `tools/parse_inbox.py` - fetches recruiter emails from Gmail inbox
 - `tools/notion.py` - creates and updates job entries in the Notion Applications database
+- `workflows/parse_inbox.md` - inbox parsing sub-workflow
 - `workflows/tailor_resume.md` - resume tailoring sub-workflow

@@ -16,7 +16,8 @@ Usage:
 Scopes requested (restricted to only what this project needs):
     - drive.file     : Access only to files this app creates or uploads
     - spreadsheets   : Read and write Google Sheets
-    - gmail.send     : Send email on the user's behalf (notifications only — cannot read mail)
+    - gmail.send     : Send email on the user's behalf (notifications only)
+    - gmail.readonly : Read inbox to parse recruiter outreach (no delete/send access)
 
 Credential paths:
     Client secret : ~/.config/gws/client_secret.json
@@ -40,6 +41,7 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive.file",
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/gmail.readonly",
 ]
 
 CONFIG_DIR = Path.home() / ".config" / "gws"
