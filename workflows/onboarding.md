@@ -23,6 +23,8 @@ LOCATION
 SALARY_MIN
 KEYWORDS
 GOOGLE_SHEET_ID
+NOTION_API_KEY
+NOTION_DATABASE_ID
 ```
 
 ## Optional Role-Profile Fields
@@ -56,7 +58,11 @@ Read `workflows/onboarding_google.md` if any of these are true:
 - `GOOGLE_SHEET_ID` is missing
 - `RESUME_DRIVE_URL` is missing and Google auth may be needed
 - `USER_EMAIL` is missing
-- Google auth is missing, invalid, or missing the Gmail send scope
+- Google auth is missing, invalid, or missing the Gmail send or Gmail readonly scope
+
+Read `workflows/onboarding_notion.md` if any of these are true:
+- `NOTION_API_KEY` is missing
+- `NOTION_DATABASE_ID` is missing
 
 For job-search criteria, choose exactly one path:
 - Read `workflows/onboarding_role_profile.md` if `ideal_role.json` exists and any of

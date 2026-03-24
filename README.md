@@ -48,7 +48,9 @@ Review that file before running the workflow on your machine. It is appropriate 
 | Claude Code in VS Code or the Claude Code CLI | Included with Claude membership | Used to run the workflow locally. You can use the VS Code extension or work directly from the CLI. | Low to Medium |
 | VS Code | Free | Optional if you prefer the CLI only. Useful for viewing project files and documents. | Low |
 | Indeed Connector | Free with Claude subscription | Connect Indeed once through Claude Settings > Connectors. | Medium |
+| Dice Connector | Free with Claude subscription | Connect Dice once through Claude Settings > Connectors. Optional — if skipped, only Indeed and inbox will be searched. | Medium |
 | Google account | Free | Any personal Gmail account works. Claude will walk you through connecting it during setup. | Medium to High |
+| Notion account | Free | Used to track jobs. Claude will walk you through creating a Notion integration and connecting your Applications database during setup. | Medium |
 | Resume file | Free | Place your resume in the `resume/` folder. Supported formats: PDF, DOC, or DOCX. | Low |
 
 ---
