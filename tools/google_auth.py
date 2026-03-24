@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Tool: google_auth.py
 
