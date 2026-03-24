@@ -3,7 +3,7 @@
 <p align="center">
   <img src="assets/Job%20Search%20Automation.jpg" alt="Job Search Automation logo" width="320">
 </p>
-Automatically searches Indeed for jobs matching your criteria, tailors your resume for each one, and tracks everything in a Google Sheet - on a schedule, while you sleep.
+Automatically searches Indeed, Dice, and your Gmail inbox for jobs matching your criteria, tailors your resume for each one, and tracks everything in Notion - on a schedule, while you sleep.
 
 ---
 
@@ -107,11 +107,11 @@ Claude walks you through setup step by step:
 
 Everything below happens automatically:
 
-- Searches Indeed for new matching jobs
-- Skips anything already in your sheet
-- Adds new jobs to the Google Sheet
+- Searches Indeed, Dice, and your Gmail inbox for new matching jobs
+- Skips anything already tracked in Notion
+- Adds new jobs to your Notion Applications database
 - Tailors your resume for each new job
-- Saves each tailored resume to Google Drive and links it in the sheet
+- Saves each tailored resume to Google Drive and links it in Notion
 
 To set up recurring runs from Claude Code, use the `/loop` slash command. Examples:
 
@@ -152,7 +152,9 @@ To update your role profile, edit `ideal_role.json` directly or redo the worksho
 | Problem | Fix |
 |---|---|
 | Google sign-in failed or expired | Run `python tools/google_auth.py` in a terminal |
+| Gmail inbox not being scanned | Delete `~/.config/gws/token.json`, then run `python tools/google_auth.py` to approve the new read-inbox permission |
 | Indeed not found | Go to claude.ai -> Settings -> Integrations and reconnect |
+| Dice not found | Go to claude.ai -> Settings -> Integrations and reconnect |
 | Wrong job criteria | Delete the relevant lines from `.env` and run again |
 | Want to use a different resume | Replace the file in `resume/` and delete `RESUME_DRIVE_URL` from `.env` |
 
