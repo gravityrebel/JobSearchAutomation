@@ -12,7 +12,7 @@ Rewrite the user's resume to mirror the language, keywords, and priorities of a 
 - `job_description` — full text of the job description
 - `company` — company name
 - `job_title` — job title
-- `sheet_row` — row number in the Google Sheet to write the result back to
+- `notion_page_id` — Notion page ID of the job entry to write the resume URL back to
 
 ---
 
@@ -211,18 +211,17 @@ The tool:
 
 ---
 
-## Step 6: Write URL Back to Sheet
+## Step 6: Write Resume URL Back to Notion
 
-Run `python tools/sheets.py --action update_notes` with:
-- `--sheet_id` = `GOOGLE_SHEET_ID` (from `.env`)
-- `--row_num` = the `sheet_row` input
-- `--notes` = the Drive URL from Step 5
+Run `python tools/notion.py --action update_resume_url` with:
+- `--page_id` = the `notion_page_id` input
+- `--resume_url` = the Drive URL from Step 5
 
 ---
 
 ## Step 7: Send Email Notification
 
-Read `USER_EMAIL` and `GOOGLE_SHEET_ID` from `.env`.
+Read `USER_EMAIL` from `.env`.
 
 Run:
 ```
@@ -232,7 +231,7 @@ python tools/notify.py \
   --company "<company>" \
   --resume_url "<drive_url_from_step_5>" \
   --job_url "<job_url>" \
-  --sheet_url "https://docs.google.com/spreadsheets/d/<GOOGLE_SHEET_ID>"
+  --tracker_url "https://www.notion.so/b34001111a7f4b039f8c1746779c5ea7"
 ```
 
 - If it succeeds: continue silently.
@@ -275,6 +274,6 @@ All errors logged to `.tmp/tailor_resume_log.txt` with timestamp and job URL.
 
 ## Tools Used
 - `tools/tailor_resume.py` — reads resume structure, applies rewrite to template, uploads to Drive
-- `tools/sheets.py` — writes Drive URL back to Notes column
+- `tools/notion.py` — writes Drive URL back to the Resume field in Notion
 - `tools/notify.py` — sends email notification with resume and job links
-- `tools/google_auth.py` — provides authenticated credentials
+- `tools/google_auth.py` — provides authenticated credentials for Drive upload

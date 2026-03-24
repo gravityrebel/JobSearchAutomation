@@ -17,7 +17,8 @@ Read `.env` and extract:
 - `LOCATION`
 - `SALARY_MIN`
 - `KEYWORDS`
-- `GOOGLE_SHEET_ID`
+- `NOTION_API_KEY`
+- `NOTION_DATABASE_ID`
 - `RESUME_DRIVE_URL`
 - `LAST_SEARCH_DATE` - ISO date string `YYYY-MM-DD` (may be empty on first run - that is expected)
 
@@ -91,13 +92,13 @@ python tools/search_dice.py \
 
 ---
 
-## Step 3: Deduplicate Against Existing Sheet
+## Step 3: Deduplicate Against Existing Notion Database
 
-Run `tools/sheets.py --action get_job_hashes --sheet_id <GOOGLE_SHEET_ID>`.
+Run `python tools/notion.py --action get_job_hashes`.
 
-The tool returns the set of job hashes already stored in the sheet (column J).
+The tool returns the list of job hashes already stored in the Notion Applications database.
 
-Filter the results from Step 2: keep only jobs whose `job_hash` is NOT already in that set.
+Filter the results from Step 2: keep only jobs whose `job_hash` is NOT already in that list.
 
 **Why hashes, not URLs:** Indeed generates different short URLs for the same job across different search queries. The job hash (extracted from the job ID's 5th segment) is stable and definitive.
 
@@ -109,15 +110,18 @@ Filter the results from Step 2: keep only jobs whose `job_hash` is NOT already i
 
 For each new job in the filtered list:
 
-**4a. Append to Sheet**
+**4a. Create Notion Entry**
 
-Run `tools/sheets.py --action append_row` with:
-- `sheet_id` = `GOOGLE_SHEET_ID`
-- `row` = `[today's date, title, company, location, salary, date_posted, url, "New", "", job_hash]`
+Run `python tools/notion.py --action create_entry` with:
+- `--job_title` = job title
+- `--company` = company name
+- `--location` = job location
+- `--salary` = salary string (may be blank)
+- `--date_posted` = date posted string
+- `--url` = job posting URL
+- `--job_hash` = the job's hash
 
-Column order in sheet: `Date Found | Job Title | Company | Location | Salary | Date Posted | URL | Status | Notes | Job ID`
-
-The tool returns the row number of the newly added row.
+The tool returns the Notion page ID of the newly created entry.
 
 **4b. Tailor Resume**
 
@@ -126,16 +130,15 @@ Call `workflows/tailor_resume.md` with:
 - `job_description` = the job's description text
 - `company` = company name
 - `job_title` = job title
-- `sheet_row` = the row number returned in 4a
+- `notion_page_id` = the page ID returned in 4a
 
-Wait for `tailor_resume` to complete and return the Google Doc URL.
+Wait for `tailor_resume` to complete and return the Drive URL.
 
-**4c. Write Resume URL to Sheet**
+**4c. Write Resume URL to Notion**
 
-Run `tools/sheets.py --action update_notes` with:
-- `sheet_id` = `GOOGLE_SHEET_ID`
-- `row_num` = the row number from 4a
-- `notes` = the Google Doc URL returned by `tailor_resume`
+Run `python tools/notion.py --action update_resume_url` with:
+- `--page_id` = the page ID from 4a
+- `--resume_url` = the Drive URL returned by `tailor_resume`
 
 ---
 
@@ -162,8 +165,8 @@ On the next run, `search_indeed.py` will use this date to filter out anything al
 | `search_dice.py` fails | Log error, continue with Indeed results only |
 | Dice MCP unavailable | Log warning, continue with Indeed results only |
 | Writing `LAST_SEARCH_DATE` fails | Log error, continue - next run will re-process recent jobs (job hash dedup prevents duplicates) |
-| Sheet append fails | Log error, skip resume tailoring for that job |
-| `tailor_resume` fails | Log error, leave Notes column blank for that row, continue |
+| Notion entry creation fails | Log error, skip resume tailoring for that job |
+| `tailor_resume` fails | Log error, leave Resume field blank for that entry, continue |
 
 All errors are logged to `.tmp/search_jobs_log.txt` with timestamp.
 
@@ -172,5 +175,5 @@ All errors are logged to `.tmp/search_jobs_log.txt` with timestamp.
 ## Tools Used
 - `tools/search_indeed.py` - parameter parsing and result normalization (Indeed queried via MCP)
 - `tools/search_dice.py` - parameter parsing and result normalization (Dice queried via MCP)
-- `tools/sheets.py` - reads/writes Google Sheet via Python Google API
+- `tools/notion.py` - creates and updates job entries in the Notion Applications database
 - `workflows/tailor_resume.md` - resume tailoring sub-workflow
