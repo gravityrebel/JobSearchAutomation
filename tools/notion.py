@@ -222,6 +222,25 @@ def update_resume_url(page_id: str, resume_url: str) -> None:
     )
 
 
+def update_match_score(page_id: str, score: int, reason: str) -> None:
+    """
+    Write a match score and one-line reason to a job entry.
+
+    Args:
+        page_id: Notion page ID
+        score:   Integer 1–10
+        reason:  One-line explanation of the score
+    """
+    client = _client()
+    client.pages.update(
+        page_id=page_id,
+        properties={
+            "Match Score": {"number": score},
+            "Match Reason": {"rich_text": [{"text": {"content": reason}}]},
+        },
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description="Manage Notion job tracker.")
     parser.add_argument("--action", required=True,
@@ -235,6 +254,8 @@ def main():
     parser.add_argument("--job_hash", default=None)
     parser.add_argument("--page_id", default=None)
     parser.add_argument("--resume_url", default=None)
+    parser.add_argument("--match_score", type=int, default=None)
+    parser.add_argument("--match_reason", default=None)
     args = parser.parse_args()
 
     try:
@@ -263,6 +284,13 @@ def main():
                 print("ERROR: --page_id and --resume_url are required", file=sys.stderr)
                 sys.exit(1)
             update_resume_url(args.page_id, args.resume_url)
+            print("ok")
+
+        elif args.action == "update_match_score":
+            if not args.page_id or args.match_score is None or not args.match_reason:
+                print("ERROR: --page_id, --match_score, and --match_reason are required", file=sys.stderr)
+                sys.exit(1)
+            update_match_score(args.page_id, args.match_score, args.match_reason)
             print("ok")
 
         sys.exit(0)

@@ -3,7 +3,7 @@
 <p align="center">
   <img src="assets/Job%20Search%20Automation.jpg" alt="Job Search Automation logo" width="320">
 </p>
-Automatically searches Indeed for jobs matching your criteria, tailors your resume for each one, and tracks everything in a Google Sheet - on a schedule, while you sleep.
+Automatically searches Indeed for jobs matching your criteria, tailors your resume for each one, and tracks everything in your choice of Google Sheets or Notion — on a schedule, while you sleep.
 
 ---
 
@@ -48,7 +48,8 @@ Review that file before running the workflow on your machine. It is appropriate 
 | Claude Code in VS Code or the Claude Code CLI | Included with Claude membership | Used to run the workflow locally. You can use the VS Code extension or work directly from the CLI. | Low to Medium |
 | VS Code | Free | Optional if you prefer the CLI only. Useful for viewing project files and documents. | Low |
 | Indeed Connector | Free with Claude subscription | Connect Indeed once through Claude Settings > Connectors. | Medium |
-| Google account | Free | Any personal Gmail account works. Claude will walk you through connecting it during setup. | Medium to High |
+| Google account | Free | Any personal Gmail account works. Claude will walk you through connecting it during setup. Required for Drive, email notifications, and Google Sheets (if selected). | Medium to High |
+| Notion account (optional) | Free | Only needed if you choose Notion as your tracker. Claude will walk you through connecting it during setup. | Low |
 | Resume file | Free | Place your resume in the `resume/` folder. Supported formats: PDF, DOC, or DOCX. | Low |
 
 ---
@@ -59,7 +60,7 @@ Review that file before running the workflow on your machine. It is appropriate 
 |---|---|---|
 | Monthly cost | About $20/month with a Claude subscription. | Often closer to $70/month once you add `n8n` plus an LLM provider and related services. |
 | Privacy and security | Uses your local project files and your own connected accounts. No exposed API keys are required for the main Claude-driven workflow. | Usually requires storing and managing API keys and external service credentials across multiple nodes and integrations. |
-| Control over Gmail and documents | Built around your own Gmail, Google Docs, Google Drive, and Google Sheets access during guided setup. | Can do the same work, but you must wire and maintain each connection yourself inside the workflow. |
+| Control over Gmail and documents | Built around your own Gmail, Google Docs, and Google Drive. Job tracking uses either Google Sheets or Notion — your choice. | Can do the same work, but you must wire and maintain each connection yourself inside the workflow. |
 | Initial technical setup | Requires a Claude subscription, Claude Code in VS Code or the Claude Code CLI, a Google account, and one-time Google and Indeed connection setup. | Requires an `n8n` account, workflow creation, model/provider selection, API key setup, and account connections for the job-search flow. |
 | AI model setup | Claude is already the core experience, so there is less model plumbing to configure. | Usually requires choosing a provider such as OpenAI, Claude, or Google and manually adding API keys and billing. |
 | Tool availability | High. Claude has strong access to useful integrations and workflow tools for this use case. | High. `n8n` has a large plugin and integration ecosystem built for automation. |
@@ -81,7 +82,7 @@ Review that file before running the workflow on your machine. It is appropriate 
 | Workflow 7: Auto-Delete Stale Jobs | Automatically archives jobs older than 15 days that you haven't acted on. | Does not do this yet, but it is a relatively simple add-on. |
 | Workflow 8: Company Intelligence Brief | On-demand research brief with product analysis, industry positioning, recent news, and interview talking points delivered as a PDF to your email. | Does not do this yet, but it is a relatively simple add-on. |
 | Workflow 9: Error Notifications | Get alerted via email if any workflow fails. | Does not do this yet, but it is a relatively simple add-on. |
-| Tracking Template | Uses a Notion template. | Uses Google Sheets for tracking instead of Notion. |
+| Tracking Template | Uses a Notion template. | Your choice: Google Sheets or Notion. You pick during first-time setup, and you can switch later. |
 
 In practical terms, the biggest functional gap is contact matching. Most of the other missing pieces are lighter workflow additions around reporting, reminders, notifications, or extra generated outputs.
 
@@ -94,11 +95,12 @@ Claude walks you through setup step by step:
 1. Checks Python and required packages
 2. Confirms Indeed is connected
 3. Sets up your Google connection
-4. Confirms your resume
-5. Collects your job-search criteria
+4. Asks which tracker you want — **Google Sheets** or **Notion** — and completes setup for your choice
+5. Confirms your resume
+6. Collects your job-search criteria
    If `ideal_role.json` is present, Claude can also auto-fill a richer role profile.
-6. Creates your Google Sheet tracker and uploads your resume to Drive
-7. Confirms everything and reminds you how to run it from Claude Code in VS Code or the CLI, including scheduling with `/loop` if you want automation
+7. Uploads your resume to Drive and finalizes your tracker
+8. Confirms everything and reminds you how to run it from Claude Code in VS Code or the CLI, including scheduling with `/loop` if you want automation
 8. Offers an optional initial run instead of starting one by default
 
 ---
@@ -107,11 +109,11 @@ Claude walks you through setup step by step:
 
 Everything below happens automatically:
 
-- Searches Indeed for new matching jobs
-- Skips anything already in your sheet
-- Adds new jobs to the Google Sheet
+- Searches Indeed and Dice for new matching jobs
+- Skips anything already in your tracker (no duplicates, ever)
+- Adds new jobs to your tracker (Google Sheets or Notion, whichever you chose)
 - Tailors your resume for each new job
-- Saves each tailored resume to Google Drive and links it in the sheet
+- Saves each tailored resume to Google Drive and links it back in your tracker
 
 To set up recurring runs from Claude Code, use the `/loop` slash command. Examples:
 
@@ -152,9 +154,12 @@ To update your role profile, edit `ideal_role.json` directly or redo the worksho
 | Problem | Fix |
 |---|---|
 | Google sign-in failed or expired | Run `python tools/google_auth.py` in a terminal |
-| Indeed not found | Go to claude.ai -> Settings -> Integrations and reconnect |
+| Indeed not found | Go to claude.ai → Settings → Integrations and reconnect |
 | Wrong job criteria | Delete the relevant lines from `.env` and run again |
 | Want to use a different resume | Replace the file in `resume/` and delete `RESUME_DRIVE_URL` from `.env` |
+| Sheet not updating | Verify `GOOGLE_SHEET_ID` and `TRACKER=sheets` in `.env` |
+| Notion not updating | Verify `NOTION_API_KEY`, `NOTION_DATABASE_ID`, and `TRACKER=notion` in `.env` |
+| Want to switch from Sheets to Notion (or back) | Tell Claude "switch trackers" — it will walk you through it and offer to migrate your data |
 
 ### Scheduled Task Keeps Asking for Approval
 

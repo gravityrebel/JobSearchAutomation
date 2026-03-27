@@ -13,15 +13,17 @@ Usage:
         --company "Acme Corp" \
         --resume_url "https://drive.google.com/..." \
         --job_url "https://www.indeed.com/viewjob?jk=..." \
-        --sheet_url "https://docs.google.com/spreadsheets/d/..."
+        --tracker_url "https://docs.google.com/spreadsheets/d/..." \
+        --tracker_label "Job Tracker Sheet"
 
 Parameters:
-    --to          Recipient email address (typically the user's own Gmail)
-    --job_title   Job title of the role
-    --company     Company name
-    --resume_url  Google Drive URL of the tailored resume
-    --job_url     Indeed URL of the job posting
-    --sheet_url   Google Sheets URL of the job tracker
+    --to             Recipient email address (typically the user's own Gmail)
+    --job_title      Job title of the role
+    --company        Company name
+    --resume_url     Google Drive URL of the tailored resume
+    --job_url        Indeed URL of the job posting
+    --tracker_url    URL to the job tracker (Google Sheet or Notion database)
+    --tracker_label  Display label for the tracker link (default: "Job Tracker")
 
 Returns:
     Prints "ok" to stdout on success.
@@ -50,7 +52,8 @@ from tools.google_auth import get_credentials
 
 
 def build_email(to: str, job_title: str, company: str,
-                resume_url: str, job_url: str, sheet_url: str) -> MIMEMultipart:
+                resume_url: str, job_url: str, tracker_url: str,
+                tracker_label: str = "Job Tracker") -> MIMEMultipart:
     """Construct the notification email as a MIME message."""
 
     subject = f"Resume ready: {job_title} at {company}"
@@ -63,8 +66,8 @@ Tailored Resume:
 Job Posting:
 {job_url}
 
-Job Tracker Sheet:
-{sheet_url}
+{tracker_label}:
+{tracker_url}
 
 ---
 This resume was rewritten to mirror the language and keywords in the job description.
@@ -98,10 +101,10 @@ To review or apply, open the resume link above.
   </tr>
   <tr>
     <td style="padding: 10px; border: 1px solid #ddd; background: #f8f9fa;">
-      <strong>Job Tracker</strong>
+      <strong>{tracker_label}</strong>
     </td>
     <td style="padding: 10px; border: 1px solid #ddd;">
-      <a href="{sheet_url}" style="color: #1a73e8;">Open Google Sheet</a>
+      <a href="{tracker_url}" style="color: #1a73e8;">Open tracker</a>
     </td>
   </tr>
 </table>
@@ -127,17 +130,19 @@ To review or apply, open the resume link above.
 
 
 def send_resume_notification(to: str, job_title: str, company: str,
-                             resume_url: str, job_url: str, sheet_url: str) -> None:
+                             resume_url: str, job_url: str, tracker_url: str,
+                             tracker_label: str = "Job Tracker") -> None:
     """
     Send a resume-ready notification email via Gmail API.
 
     Args:
-        to:          Recipient address (user's own Gmail)
-        job_title:   Job title
-        company:     Company name
-        resume_url:  Drive URL of the tailored resume
-        job_url:     Indeed URL of the job posting
-        sheet_url:   Google Sheets URL of the tracker
+        to:             Recipient address (user's own Gmail)
+        job_title:      Job title
+        company:        Company name
+        resume_url:     Drive URL of the tailored resume
+        job_url:        Indeed URL of the job posting
+        tracker_url:    URL to the job tracker (Google Sheet or Notion)
+        tracker_label:  Display label for the tracker link
 
     Raises:
         Exception on send failure
@@ -145,7 +150,7 @@ def send_resume_notification(to: str, job_title: str, company: str,
     creds = get_credentials()
     service = build("gmail", "v1", credentials=creds)
 
-    msg = build_email(to, job_title, company, resume_url, job_url, sheet_url)
+    msg = build_email(to, job_title, company, resume_url, job_url, tracker_url, tracker_label)
     raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
 
     service.users().messages().send(
@@ -161,7 +166,8 @@ def main():
     parser.add_argument("--company", required=True)
     parser.add_argument("--resume_url", required=True)
     parser.add_argument("--job_url", required=True)
-    parser.add_argument("--sheet_url", required=True)
+    parser.add_argument("--tracker_url", required=True)
+    parser.add_argument("--tracker_label", default="Job Tracker")
     args = parser.parse_args()
 
     try:
@@ -171,7 +177,8 @@ def main():
             company=args.company,
             resume_url=args.resume_url,
             job_url=args.job_url,
-            sheet_url=args.sheet_url,
+            tracker_url=args.tracker_url,
+            tracker_label=args.tracker_label,
         )
         print("ok")
         sys.exit(0)

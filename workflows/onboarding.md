@@ -22,8 +22,12 @@ JOB_TITLES
 LOCATION
 SALARY_MIN
 KEYWORDS
-GOOGLE_SHEET_ID
+TRACKER
 ```
+
+Additionally, once TRACKER is set:
+- If `TRACKER=sheets`: `GOOGLE_SHEET_ID` must also be present
+- If `TRACKER=notion`: `NOTION_API_KEY` and `NOTION_DATABASE_ID` must also be present
 
 ## Optional Role-Profile Fields
 These are useful when `ideal_role.json` is present, but they are not required for the automation to run:
@@ -53,7 +57,6 @@ Read `workflows/onboarding_dependencies.md` if:
 
 Read `workflows/onboarding_google.md` if any of these are true:
 - `DRIVE_FOLDER_ID` is missing
-- `GOOGLE_SHEET_ID` is missing
 - `RESUME_DRIVE_URL` is missing and Google auth may be needed
 - `USER_EMAIL` is missing
 - Google auth is missing, invalid, or missing the Gmail send scope
@@ -66,8 +69,9 @@ For job-search criteria, choose exactly one path:
 
 Read `workflows/onboarding_resume.md` if `RESUME_DRIVE_URL` is missing.
 
-Read `workflows/onboarding_finalize.md` if `GOOGLE_SHEET_ID` is missing, or after the other steps
-to produce the closing summary.
+Read `workflows/onboarding_finalize.md` if `TRACKER` is missing, or if the tracker-specific
+credential is missing (`GOOGLE_SHEET_ID` for sheets / `NOTION_API_KEY` or `NOTION_DATABASE_ID`
+for notion), or after the other steps to produce the closing summary.
 
 ### Step 3: Stop After Setup
 When the needed sub-workflows are complete, return control to `run.md`.

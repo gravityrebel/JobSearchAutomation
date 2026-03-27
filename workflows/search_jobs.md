@@ -1,7 +1,8 @@
 # Workflow: Search Jobs
 
 ## Objective
-Silently search Indeed and Dice for new jobs matching stored criteria, append only new results to the master Google Sheet, and trigger resume tailoring for each new job.
+Silently search Indeed and Dice for new jobs matching stored criteria, track new results in the
+configured tracker (Google Sheets or Notion), and trigger resume tailoring for each new job.
 
 ## When This Runs
 - On the registered schedule (set during onboarding).
@@ -17,12 +18,24 @@ Read `.env` and extract:
 - `LOCATION`
 - `SALARY_MIN`
 - `KEYWORDS`
-- `NOTION_API_KEY`
-- `NOTION_DATABASE_ID`
+- `TRACKER` - either `sheets` or `notion`
 - `RESUME_DRIVE_URL`
 - `LAST_SEARCH_DATE` - ISO date string `YYYY-MM-DD` (may be empty on first run - that is expected)
 
-If any required field other than `LAST_SEARCH_DATE` is missing, log an error and exit. Do not ask the user - the schedule should not block on input.
+If TRACKER=sheets, also load:
+- `GOOGLE_SHEET_ID`
+
+If TRACKER=notion, also load:
+- `NOTION_API_KEY`
+- `NOTION_DATABASE_ID`
+
+If TRACKER=sheets and there is no `GOOGLE_SHEET_ID`, let the user know they need to set up sheets, read from `onboarding_google.md` and walk the user through the process of setting up sheets.
+
+If TRACKER=sheets and there are missing `NOTION*` entries, let the user know they need to set up Notion, read from `onboarding_google.md` and walk the user through the process of setting up Notion.
+
+If there has been a change, ask the user about doing a migration.
+
+If any other required field other than `LAST_SEARCH_DATE` is missing, log an error and exit. Do not ask the user - the schedule should not block on input.
 
 ---
 
@@ -92,11 +105,21 @@ python tools/search_dice.py \
 
 ---
 
-## Step 3: Deduplicate Against Existing Notion Database
+## Step 3: Deduplicate Against Existing Tracker
+
+### If TRACKER=sheets
+
+Run `python tools/sheets.py --action get_job_hashes --sheet_id "<GOOGLE_SHEET_ID>"`.
+
+The tool returns the list of job hashes already stored in column J of the sheet.
+
+### If TRACKER=notion
 
 Run `python tools/notion.py --action get_job_hashes`.
 
 The tool returns the list of job hashes already stored in the Notion Applications database.
+
+---
 
 Filter the results from Step 2: keep only jobs whose `job_hash` is NOT already in that list.
 
@@ -110,7 +133,29 @@ Filter the results from Step 2: keep only jobs whose `job_hash` is NOT already i
 
 For each new job in the filtered list:
 
-**4a. Create Notion Entry**
+**4a. Score the Job**
+
+Before creating the tracker entry, score the job 1–10 against the candidate profile:
+
+Rubric (add the three components):
+- **Title fit (0–4):** Exact "Engineering Manager" or "Senior/Lead EM" = 4; "Software/Systems EM" or "Manager, Engineering" = 3; adjacent senior-leadership title = 2; poor match = 0–1
+- **Salary fit (0–3):** Salary floor ≥ $175k = 3; floor $150k–$175k = 2; floor $120k–$150k = 1; floor below $120k = 0
+- **Location fit (0–3):** DC/MD/VA metro or fully remote = 3; remote but listed in another city = 2; requires relocation = 1; on-site outside DC = 0
+
+Write a one-sentence reason citing the score drivers (include actual dollar figures from the salary field).
+
+**4b. Create Tracker Entry**
+
+### If TRACKER=sheets
+
+Run `python tools/sheets.py --action append_row --sheet_id "<GOOGLE_SHEET_ID>"` with:
+```
+--row '["<today>","<job_title>","<company>","<location>","<salary>","<date_posted>","<url>","New","","<job_hash>"]'
+```
+
+The tool returns the row number of the newly appended row. Store as `tracker_id`.
+
+### If TRACKER=notion
 
 Run `python tools/notion.py --action create_entry` with:
 - `--job_title` = job title
@@ -121,23 +166,38 @@ Run `python tools/notion.py --action create_entry` with:
 - `--url` = job posting URL
 - `--job_hash` = the job's hash
 
-The tool returns the Notion page ID of the newly created entry.
+The tool returns the Notion page ID of the newly created entry. Store as `tracker_id`.
 
-**4b. Tailor Resume**
+Then run `python tools/notion.py --action update_match_score` with:
+- `--page_id` = `tracker_id`
+- `--match_score` = the integer score from 4a
+- `--match_reason` = the one-sentence reason from 4a
+
+**4c. Tailor Resume**
 
 Call `workflows/tailor_resume.md` with:
 - `job_url` = the job's URL
 - `job_description` = the job's description text
 - `company` = company name
 - `job_title` = job title
-- `notion_page_id` = the page ID returned in 4a
+- `tracker_type` = value of `TRACKER` (either `sheets` or `notion`)
+- `tracker_id` = the row number or page ID from 4b
 
 Wait for `tailor_resume` to complete and return the Drive URL.
 
-**4c. Write Resume URL to Notion**
+**4d. Write Resume URL to Tracker**
+
+### If TRACKER=sheets
+
+Run `python tools/sheets.py --action update_notes` with:
+- `--sheet_id` = `GOOGLE_SHEET_ID`
+- `--row_num` = `tracker_id`
+- `--notes` = the Drive URL returned by `tailor_resume`
+
+### If TRACKER=notion
 
 Run `python tools/notion.py --action update_resume_url` with:
-- `--page_id` = the page ID from 4a
+- `--page_id` = `tracker_id`
 - `--resume_url` = the Drive URL returned by `tailor_resume`
 
 ---
@@ -165,8 +225,8 @@ On the next run, `search_indeed.py` will use this date to filter out anything al
 | `search_dice.py` fails | Log error, continue with Indeed results only |
 | Dice MCP unavailable | Log warning, continue with Indeed results only |
 | Writing `LAST_SEARCH_DATE` fails | Log error, continue - next run will re-process recent jobs (job hash dedup prevents duplicates) |
-| Notion entry creation fails | Log error, skip resume tailoring for that job |
-| `tailor_resume` fails | Log error, leave Resume field blank for that entry, continue |
+| Tracker entry creation fails | Log error, skip resume tailoring for that job |
+| `tailor_resume` fails | Log error, leave resume field blank for that entry, continue |
 
 All errors are logged to `.tmp/search_jobs_log.txt` with timestamp.
 
@@ -175,5 +235,6 @@ All errors are logged to `.tmp/search_jobs_log.txt` with timestamp.
 ## Tools Used
 - `tools/search_indeed.py` - parameter parsing and result normalization (Indeed queried via MCP)
 - `tools/search_dice.py` - parameter parsing and result normalization (Dice queried via MCP)
-- `tools/notion.py` - creates and updates job entries in the Notion Applications database
+- `tools/sheets.py` - creates and updates job entries in the Google Sheet (when TRACKER=sheets)
+- `tools/notion.py` - creates and updates job entries in the Notion database (when TRACKER=notion)
 - `workflows/tailor_resume.md` - resume tailoring sub-workflow

@@ -1,10 +1,10 @@
 # Workflow: Tailor Resume
 
 ## Objective
-Rewrite the user's resume to mirror the language, keywords, and priorities of a specific job description. The output is a new .docx built from the original resume as a template — preserving all fonts, sizes, spacing, bold, colors, and layout exactly. The URL is written back into the job tracker sheet.
+Rewrite the user's resume to mirror the language, keywords, and priorities of a specific job description. The output is a new .docx built from the original resume as a template — preserving all fonts, sizes, spacing, bold, colors, and layout exactly. The URL is written back into the job tracker entry.
 
 ## When This Runs
-- Called automatically by `workflows/search_jobs.md` for each new job added to the sheet.
+- Called automatically by `workflows/search_jobs.md` for each new job added to the tracker.
 - Never runs standalone unless manually triggered for a specific job.
 
 ## Inputs (passed in from search_jobs)
@@ -12,7 +12,8 @@ Rewrite the user's resume to mirror the language, keywords, and priorities of a 
 - `job_description` — full text of the job description
 - `company` — company name
 - `job_title` — job title
-- `notion_page_id` — Notion page ID of the job entry to write the resume URL back to
+- `tracker_type` — either `sheets` or `notion` (value of `TRACKER` in `.env`)
+- `tracker_id` — the row number (sheets) or Notion page ID (notion) for this job entry
 
 ---
 
@@ -211,17 +212,34 @@ The tool:
 
 ---
 
-## Step 6: Write Resume URL Back to Notion
+## Step 6: Write Resume URL Back to Tracker
+
+### If tracker_type=sheets
+
+Run `python tools/sheets.py --action update_notes` with:
+- `--sheet_id` = `GOOGLE_SHEET_ID` (read from `.env`)
+- `--row_num` = `tracker_id`
+- `--notes` = the Drive URL from Step 5
+
+### If tracker_type=notion
 
 Run `python tools/notion.py --action update_resume_url` with:
-- `--page_id` = the `notion_page_id` input
+- `--page_id` = `tracker_id`
 - `--resume_url` = the Drive URL from Step 5
 
 ---
 
 ## Step 7: Send Email Notification
 
-Read `USER_EMAIL` from `.env`.
+Read `USER_EMAIL` and `TRACKER` from `.env`.
+
+If TRACKER=sheets, set:
+- `tracker_url` = `https://docs.google.com/spreadsheets/d/<GOOGLE_SHEET_ID>`
+- `tracker_label` = `"Job Tracker Sheet"`
+
+If TRACKER=notion, set:
+- `tracker_url` = `https://www.notion.so/<NOTION_DATABASE_ID>` (replace hyphens if needed)
+- `tracker_label` = `"Notion Tracker"`
 
 Run:
 ```
@@ -231,7 +249,8 @@ python tools/notify.py \
   --company "<company>" \
   --resume_url "<drive_url_from_step_5>" \
   --job_url "<job_url>" \
-  --tracker_url "https://www.notion.so/b34001111a7f4b039f8c1746779c5ea7"
+  --tracker_url "<tracker_url>" \
+  --tracker_label "<tracker_label>"
 ```
 
 - If it succeeds: continue silently.
@@ -257,8 +276,8 @@ Return the Drive URL to the calling workflow (`search_jobs.md`).
 | [ROLE] anchor shifted in rewrite | Fix rewrite — move displaced content back to its correct section |
 | Content crossed role boundary | Fix rewrite — return content to the role it originated from |
 | Upload fails | Log error, return None — Notes column stays blank |
-| Sheet update fails | Log error, still return the Drive URL |
-| Notification fails | Log error, continue — resume and sheet are already saved |
+| Tracker update fails | Log error, still return the Drive URL |
+| Notification fails | Log error, continue — resume and tracker are already saved |
 
 All errors logged to `.tmp/tailor_resume_log.txt` with timestamp and job URL.
 
@@ -274,6 +293,7 @@ All errors logged to `.tmp/tailor_resume_log.txt` with timestamp and job URL.
 
 ## Tools Used
 - `tools/tailor_resume.py` — reads resume structure, applies rewrite to template, uploads to Drive
-- `tools/notion.py` — writes Drive URL back to the Resume field in Notion
+- `tools/sheets.py` — writes Drive URL back to the Notes column (when tracker_type=sheets)
+- `tools/notion.py` — writes Drive URL back to the Resume field (when tracker_type=notion)
 - `tools/notify.py` — sends email notification with resume and job links
 - `tools/google_auth.py` — provides authenticated credentials for Drive upload

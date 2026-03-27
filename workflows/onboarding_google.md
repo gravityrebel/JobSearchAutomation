@@ -9,7 +9,7 @@ exists so resume upload and sheet creation can work.
 
 ## Behavior
 Tell the user:
-`Now I need to connect this project to your Google account so it can create and manage your Google Sheets and upload your resume to Drive. You're setting up your own personal app, not granting access to a third-party company app. It's free, it takes about 5 minutes, and you only do it once on this machine.`
+`Now I need to connect this project to your Google account so it can upload your resume to Drive and send you email notifications. You're setting up your own personal app, not granting access to a third-party company app. It's free, it takes about 5 minutes, and you only do it once on this machine.`
 
 Run `python tools/google_auth.py` to check whether auth is already valid.
 
@@ -47,7 +47,9 @@ Walk the user through this sequence.
 
 2. Enable these APIs:
    - `https://console.cloud.google.com/apis/library/drive.googleapis.com`
-   - `https://console.cloud.google.com/apis/library/sheets.googleapis.com`
+   - `https://console.cloud.google.com/apis/library/gmail.googleapis.com`
+   - If `TRACKER=sheets` (or if TRACKER is not yet set): also enable
+     `https://console.cloud.google.com/apis/library/sheets.googleapis.com`
 
 3. Configure OAuth consent and create a desktop OAuth client:
    - Consent screen: `https://console.cloud.google.com/apis/credentials/consent`
@@ -79,4 +81,4 @@ Tell the user:
 
 ## Notes
 - Google auth is machine-local and reused on future runs
-- Do not create the Google Sheet here; `workflows/onboarding_finalize.md` handles that
+- Do not create the Google Sheet or set up Notion here; `workflows/onboarding_finalize.md` handles that

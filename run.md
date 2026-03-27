@@ -10,7 +10,7 @@ or the scheduled task fired automatically.
 This system does three things automatically:
 
 1. **Searches Indeed** for jobs that match your saved criteria (titles, location, salary, keywords)
-2. **Adds new jobs** to a Google Sheet so you have a running tracker — no duplicates, ever
+2. **Adds new jobs** to your tracker — either a Google Sheet or a Notion database, your choice — no duplicates, ever
 3. **Rewrites your resume** for each new job to mirror that job's language and keywords,
    then saves each version as a Google Doc
 
@@ -35,8 +35,9 @@ and Google sign-in. Each step explains what it's doing and why before it does an
 - Checks that Python and the required Python packages are installed
   (installs anything missing automatically, with your confirmation)
 - Walks you through Google authentication once — opens a browser, you sign in, done
+- Asks which tracker you want: Google Sheets or Notion
 - Asks for your job search preferences one question at a time
-- Creates your Google Sheet tracker
+- Sets up your chosen tracker
 - Uploads your resume to Google Drive
 - Reminds you to use Claude Code in VS Code or the Claude Code CLI, and to use your OS scheduler for automatic recurring runs if desired
 
@@ -61,10 +62,10 @@ Claude reads and follows `workflows/search_jobs.md`.
 **What happens under the hood:**
 - Reads your saved criteria from `.env`
 - Searches Indeed for matching jobs
-- Filters out anything already in your sheet
-- Adds new jobs to the sheet with status "New"
+- Filters out anything already in your tracker (no duplicates)
+- Adds new jobs to your tracker (Google Sheet or Notion)
 - Rewrites your resume for each new job and saves it as a Google Doc
-- Writes the resume link into the Notes column for that job row
+- Writes the resume link into the job entry in your tracker
 
 ---
 
@@ -73,8 +74,8 @@ Claude reads and follows `workflows/search_jobs.md`.
 Claude narrates each major action in plain English before doing it. For example:
 - *"Checking if Python is installed..."*
 - *"I found your resume — is this the right file?"*
-- *"Creating your Job Tracker sheet in Google Drive..."*
-- *"Found 4 new jobs. Adding them to your sheet and tailoring your resume for each one..."*
+- *"Which tracker would you like to use — Google Sheets or Notion?"*
+- *"Found 4 new jobs. Adding them to your tracker and tailoring your resume for each one..."*
 
 You will never see a wall of code or a silent hang. If something takes more than a few seconds,
 Claude will say what it's waiting for.
@@ -99,7 +100,8 @@ If you ever see a prompt and aren't sure what it's for, just ask: "What is this 
 | Service | How It Connects |
 |---|---|
 | **Indeed** | Via your claude.ai account (connect once at claude.ai → Settings → Integrations) |
-| **Google** (Drive, Docs, Sheets) | Via the Python tools in this project using your own Google Cloud project and OAuth setup (free, ~5 min setup) |
+| **Google** (Drive, Docs, + Sheets if selected) | Via the Python tools in this project using your own Google Cloud project and OAuth setup (free, ~5 min setup) |
+| **Notion** (if selected as tracker) | Via the Notion API — your `NOTION_API_KEY` and `NOTION_DATABASE_ID` in `.env` |
 
 ---
 
@@ -119,6 +121,8 @@ Nothing sensitive is stored in this project folder.
 | Want to change job criteria | Delete the relevant lines from `.env`, then run again |
 | No jobs found | Check `LOCATION` and `JOB_TITLES` in `.env` |
 | Google tools not responding | Run `python tools/google_auth.py` in a terminal, then restart Claude Code |
-| Sheet not updating | Verify `GOOGLE_SHEET_ID` in `.env` |
+| Sheet not updating | Verify `GOOGLE_SHEET_ID` and `TRACKER=sheets` in `.env` |
+| Notion not updating | Verify `NOTION_API_KEY`, `NOTION_DATABASE_ID`, and `TRACKER=notion` in `.env` |
+| Want to switch trackers | Ask me to switch trackers — I'll walk you through it |
 | Resume not tailoring | Check `RESUME_DRIVE_URL` in `.env` is accessible |
 | Scheduled task not firing | Verify your OS-level scheduled task is active and that it launches Claude Code CLI from this project directory |
