@@ -7,8 +7,11 @@ search results. Output feeds directly into the deduplication and Notion tracking
 in `search_jobs.md`.
 
 ## When This Runs
-Called from `search_jobs.md` as Step 2d — after Indeed and Dice results are collected,
-before merging into the combined list. Never runs standalone during a scheduled job search.
+Called from `search_jobs.md` Step 2d **only when `INBOX_ENABLED=true`** in `.env`.
+Gmail inbox parsing is opt-in and disabled by default. To enable it, set `INBOX_ENABLED=true`
+in `.env` and ensure Google auth includes the `gmail.readonly` scope (see Prerequisites below).
+
+To enable inbox parsing, tell Claude: "enable inbox search" or set `INBOX_ENABLED=true` in `.env` directly.
 
 Can be tested manually by the user with:
 ```
