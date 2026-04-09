@@ -7,11 +7,12 @@ search results. Output feeds directly into the deduplication and Notion tracking
 in `search_jobs.md`.
 
 ## When This Runs
-Called from `search_jobs.md` Step 2d **only when `INBOX_ENABLED=true`** in `.env`.
-Gmail inbox parsing is opt-in and disabled by default. To enable it, set `INBOX_ENABLED=true`
-in `.env` and ensure Google auth includes the `gmail.readonly` scope (see Prerequisites below).
+**Only when the user explicitly asks** — for example: "check my inbox for job leads",
+"scan my Gmail for recruiter emails", or similar direct requests.
 
-To enable inbox parsing, tell Claude: "enable inbox search" or set `INBOX_ENABLED=true` in `.env` directly.
+This workflow is intentionally NOT part of the automated job search run (`search_jobs.md`).
+It is token-intensive and may not always yield structured job data. Never invoke it
+automatically or on a schedule. Only run it in response to a direct user request.
 
 Can be tested manually by the user with:
 ```
@@ -137,9 +138,9 @@ with two additional fields (`job_hash` and `source`). Example:
 ]
 ```
 
-This list is merged into the combined results in `search_jobs.md` Step 2d, before
-Notion deduplication runs. The `inbox_` prefix on `job_hash` prevents any collision
-with Indeed or Dice hashes.
+Present these results to the user for review. For each kept lead, offer to create a Notion
+entry by running `search_jobs.md` steps 3–4 (dedup check, tracker entry, resume tailoring).
+The `inbox_` prefix on `job_hash` prevents any collision with Indeed or Dice hashes.
 
 ---
 

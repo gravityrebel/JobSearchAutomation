@@ -73,12 +73,14 @@ Read `workflows/onboarding_finalize.md` if `TRACKER` is missing, or if the track
 credential is missing (`GOOGLE_SHEET_ID` for sheets / `NOTION_API_KEY` or `NOTION_DATABASE_ID`
 for notion), or after the other steps to produce the closing summary.
 
-**Gmail inbox search is opt-in and disabled by default.** During the closing summary, mention it:
-> Gmail inbox search is available but off by default. If you'd like Claude to scan your inbox for
-> recruiter outreach during each job search run, say "enable inbox search" and I'll walk you through it.
+**Gmail inbox search is a separate, on-demand workflow.** During the closing summary, mention it once:
+> Gmail inbox search is available — it scans your inbox for recruiter outreach and can add those
+> leads to your tracker. It runs on-demand only (not automatically). Say "check my inbox for job leads"
+> any time you want to run it.
 
-Do not set up Gmail inbox search unless the user explicitly asks. If they ask, read `workflows/parse_inbox.md`
-for prerequisites (the `gmail.readonly` scope) and set `INBOX_ENABLED=true` in `.env` when complete.
+Do not set up or invoke Gmail inbox search unless the user explicitly asks. If they ask, read
+`workflows/parse_inbox.md` and ensure Google auth includes the `gmail.readonly` scope (see that
+workflow's Prerequisites section).
 
 ### Step 3: Stop After Setup
 When the needed sub-workflows are complete, return control to `run.md`.

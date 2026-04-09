@@ -19,7 +19,6 @@ Read `.env` and extract:
 - `SALARY_MIN`
 - `KEYWORDS`
 - `TRACKER` - either `sheets` or `notion`
-- `INBOX_ENABLED` - `true` or `false` (default: `false`). Gmail inbox parsing is opt-in and must be explicitly enabled.
 - `RESUME_DRIVE_URL`
 - `LAST_SEARCH_DATE` - ISO date string `YYYY-MM-DD` (may be empty on first run - that is expected)
 
@@ -98,23 +97,15 @@ python tools/search_dice.py \
 - If the Dice MCP call fails or returns an error, log it and continue with Indeed results only —
   a Dice failure must not block the whole run.
 
-**2d. Parse Gmail inbox** — only if `INBOX_ENABLED=true`. Skip this step entirely if
-`INBOX_ENABLED` is missing, `false`, or any value other than `true`.
-
-If enabled, call `workflows/parse_inbox.md` with `LAST_SEARCH_DATE`. The workflow returns a list
-of normalized job objects (same format as Indeed/Dice output) with `job_hash` values prefixed
-`inbox_` and `source` set to `"inbox"`.
-
-- If `parse_inbox.py` fails (missing scope, API error, etc.), log the error and continue without
-  inbox results. Inbox failure must not block the run.
-
-**2e. Merge results**: combine the filtered Indeed list, filtered Dice list, and inbox list (if
-`INBOX_ENABLED=true`) into one combined list.
+**2d. Merge results**: combine the filtered Indeed list and filtered Dice list into one combined list.
 
 **Edge cases:**
 - If the combined list is empty, log `"No new jobs found this run."` and stop.
-- If all three sources error, log the full errors and stop.
-- If one or two sources error, log the errors and continue with whatever results remain.
+- If either tool errors, log the full error. Only stop if both sources fail.
+
+> **Note:** Gmail inbox search is NOT part of the automated search run. It is a separate,
+> standalone workflow (`workflows/parse_inbox.md`) that only runs when the user explicitly asks
+> for it. Never invoke it from here.
 
 ---
 
@@ -241,9 +232,6 @@ On the next run, `search_indeed.py` will use this date to filter out anything al
 | `search_indeed.py` fails | Log error and stop |
 | `search_dice.py` fails | Log error, continue with remaining sources |
 | Dice MCP unavailable | Log warning, continue with remaining sources |
-| `INBOX_ENABLED` not set or `false` | Skip inbox step entirely — this is the default |
-| `parse_inbox.py` fails | Log error, continue with Indeed and Dice results |
-| Gmail token missing `gmail.readonly` | Log re-auth instructions, continue without inbox results |
 | Writing `LAST_SEARCH_DATE` fails | Log error, continue - next run will re-process recent jobs (job hash dedup prevents duplicates) |
 | Tracker entry creation fails | Log error, skip resume tailoring for that job |
 | `tailor_resume` fails | Log error, leave resume field blank for that entry, continue |
@@ -255,8 +243,6 @@ All errors are logged to `.tmp/search_jobs_log.txt` with timestamp.
 ## Tools Used
 - `tools/search_indeed.py` - parameter parsing and result normalization (Indeed queried via MCP)
 - `tools/search_dice.py` - parameter parsing and result normalization (Dice queried via MCP)
-- `tools/parse_inbox.py` - fetches recruiter emails from Gmail inbox
 - `tools/sheets.py` - creates and updates job entries in the Google Sheet (when TRACKER=sheets)
 - `tools/notion.py` - creates and updates job entries in the Notion database (when TRACKER=notion)
-- `workflows/parse_inbox.md` - inbox parsing sub-workflow
 - `workflows/tailor_resume.md` - resume tailoring sub-workflow
