@@ -162,7 +162,7 @@ def create_entry(
 
     properties = {
         "Opportunity": {
-            "title": [{"text": {"content": job_title}}]
+            "title": [{"text": {"content": company}}]
         },
         "Company / School": {
             "rich_text": [{"text": {"content": company}}]
@@ -235,8 +235,25 @@ def update_match_score(page_id: str, score: int, reason: str) -> None:
     client.pages.update(
         page_id=page_id,
         properties={
-            "Match Score": {"number": score},
+            "Score": {"number": score},
             "Match Reason": {"rich_text": [{"text": {"content": reason}}]},
+        },
+    )
+
+
+def update_cover_letter_url(page_id: str, cover_letter_url: str) -> None:
+    """
+    Write the tailored cover letter Drive URL into the Cover Letter field of a job entry.
+
+    Args:
+        page_id:          Notion page ID (returned by create_entry)
+        cover_letter_url: Google Drive URL for the cover letter
+    """
+    client = _client()
+    client.pages.update(
+        page_id=page_id,
+        properties={
+            "Cover Letter": {"url": cover_letter_url}
         },
     )
 
@@ -244,7 +261,7 @@ def update_match_score(page_id: str, score: int, reason: str) -> None:
 def main():
     parser = argparse.ArgumentParser(description="Manage Notion job tracker.")
     parser.add_argument("--action", required=True,
-                        choices=["get_job_hashes", "create_entry", "update_resume_url"])
+                        choices=["get_job_hashes", "create_entry", "update_resume_url", "update_match_score", "update_cover_letter_url"])
     parser.add_argument("--job_title", default=None)
     parser.add_argument("--company", default=None)
     parser.add_argument("--location", default=None)
@@ -254,6 +271,7 @@ def main():
     parser.add_argument("--job_hash", default=None)
     parser.add_argument("--page_id", default=None)
     parser.add_argument("--resume_url", default=None)
+    parser.add_argument("--cover_letter_url", default=None)
     parser.add_argument("--match_score", type=int, default=None)
     parser.add_argument("--match_reason", default=None)
     args = parser.parse_args()
@@ -291,6 +309,13 @@ def main():
                 print("ERROR: --page_id, --match_score, and --match_reason are required", file=sys.stderr)
                 sys.exit(1)
             update_match_score(args.page_id, args.match_score, args.match_reason)
+            print("ok")
+
+        elif args.action == "update_cover_letter_url":
+            if not args.page_id or not args.cover_letter_url:
+                print("ERROR: --page_id and --cover_letter_url are required", file=sys.stderr)
+                sys.exit(1)
+            update_cover_letter_url(args.page_id, args.cover_letter_url)
             print("ok")
 
         sys.exit(0)

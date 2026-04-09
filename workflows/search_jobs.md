@@ -135,14 +135,16 @@ For each new job in the filtered list:
 
 **4a. Score the Job**
 
-Before creating the tracker entry, score the job 1–10 against the candidate profile:
+Before creating the tracker entry, score the job 1–10 against the candidate profile.
+
+**First, check for disqualifying role type.** If the title or description indicates the role is primarily IT operations, NOC/TOC, SRE incident management, ITSM (ServiceNow), or infrastructure operations rather than software engineering leadership, set Role type fit = 0 immediately and do not award partial credit elsewhere.
 
 Rubric (add the three components):
-- **Title fit (0–4):** Exact "Engineering Manager" or "Senior/Lead EM" = 4; "Software/Systems EM" or "Manager, Engineering" = 3; adjacent senior-leadership title = 2; poor match = 0–1
-- **Salary fit (0–3):** Salary floor ≥ $175k = 3; floor $150k–$175k = 2; floor $120k–$150k = 1; floor below $120k = 0
-- **Location fit (0–3):** DC/MD/VA metro or fully remote = 3; remote but listed in another city = 2; requires relocation = 1; on-site outside DC = 0
+- **Skills & domain match (0–4):** Strong overlap with resume (Java/Kotlin/Spring, React/Next.js/TypeScript, DevSecOps, AWS/Azure, Agile/Scrum, CI/CD) = 4; moderate overlap = 3; weak overlap = 1–2; minimal or none = 0
+- **Role type fit (0–3):** Software engineering leadership (building products, managing dev teams, SDLC ownership) = 3; product/platform EM with software delivery focus = 2; adjacent senior technical leadership with meaningful software component = 1; ops/infrastructure/SRE/NOC/TOC/ITSM management = 0
+- **Seniority fit (0–3):** Engineering Manager scope that matches experience level = 3; somewhat over or under-scoped but plausible = 2; significantly mismatched seniority = 0–1
 
-Write a one-sentence reason citing the score drivers (include actual dollar figures from the salary field).
+Write a one-sentence reason citing the score drivers. If Role type fit = 0, the reason must explicitly call out the ops/ITSM nature of the role.
 
 **4b. Create Tracker Entry**
 
@@ -165,6 +167,8 @@ Run `python tools/notion.py --action create_entry` with:
 - `--date_posted` = date posted string
 - `--url` = job posting URL
 - `--job_hash` = the job's hash
+
+**Shell quoting note:** Always wrap `--salary` in single quotes when calling from the shell to prevent `$` signs from being interpreted as variable references (e.g. `--salary '$150,000 - $300,000'`). When calling `create_entry` directly from Python code, this is not an issue.
 
 The tool returns the Notion page ID of the newly created entry. Store as `tracker_id`.
 
