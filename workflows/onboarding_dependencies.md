@@ -55,3 +55,11 @@ Verify `mcp__claude_ai_Indeed__search_jobs` is accessible.
 - If not available: tell the user
   `Indeed isn't connected. Go to claude.ai -> Settings -> Integrations, connect Indeed, then restart Claude Code and run again.`
   Then stop
+
+### Dice MCP
+Verify `mcp__claude_ai_Dice__search_jobs` is accessible.
+
+- If available: continue
+- If not available: tell the user
+  `Dice isn't connected. Go to claude.ai -> Settings -> Integrations, connect Dice, then restart Claude Code and run again. Dice is optional — if you skip it, only Indeed and your Gmail inbox will be searched.`
+  Do not stop — Dice is non-blocking. Log the warning and continue.
